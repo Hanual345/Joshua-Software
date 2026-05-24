@@ -438,6 +438,8 @@
                         alert("Please allow notifications in your browser settings for this app to work.");
                     }
                 });
+            } else {
+                alert("Your browser blocks native notifications here (likely because it requires a secure HTTPS connection or 'Add to Home Screen' on iOS). The app will use loud audio, vibrations, and pop-ups instead!");
             }
         }
 
@@ -951,13 +953,23 @@
                     const nagIntervalMs = parseInt(document.getElementById('nagInterval').value) || 120000;
                     // If we haven't notified you yet, OR the chosen interval has passed since the last notification
                     if (currentTimeMs - task.lastNotified >= nagIntervalMs) {
-                        if (Notification.permission === "granted") {
-                            new Notification("🚨 Overdue Task!", {
-                                body: `You still need to: ${task.name}!\nPlease go mark it as done!`,
-                                requireInteraction: true // Keeps the notification on screen until you dismiss it
-                            });
+                        // Trigger mobile phone vibration if supported
+                        if ("vibrate" in navigator) {
+                            navigator.vibrate([500, 200, 500, 200, 500]);
+                        }
+
+                        if ("Notification" in window && Notification.permission === "granted") {
+                            try {
+                                new Notification("🚨 Overdue Task!", {
+                                    body: `You still need to: ${task.name}!\nPlease go mark it as done!`,
+                                    requireInteraction: true // Keeps the notification on screen until you dismiss it
+                                });
+                            } catch (err) {
+                                // Android Chrome sometimes throws an error if a Service Worker isn't used
+                                alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`);
+                            }
                         } else {
-                            // Fallback if desktop notifications are blocked/ignored
+                            // Fallback if desktop notifications are blocked, ignored, or unsupported
                             alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`);
                         }
 
