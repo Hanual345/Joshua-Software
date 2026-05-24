@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persistent Task Notifier</title>
+    <style>
+        :root {
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --success: #10b981;
+            --success-hover: #059669;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --info: #0ea5e9;
+            --info-hover: #0284c7;
+            --purple: #8b5cf6;
+            --purple-hover: #7c3aed;
+            --teal: #14b8a6;
+            --teal-hover: #0d9488;
+        }
+
+        html.dark-mode {
+            --bg-page: #020617;
+            --bg-card: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --primary: #818cf8;
+            --primary-hover: #6366f1;
+        }
+
+        html { background-color: var(--bg-page); min-height: 100%; transition: background-color 0.3s ease; }
+        
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            max-width: 500px; margin: 2rem auto; padding: 2.5rem; 
+            background-color: var(--bg-card); color: var(--text-main);
+            border-radius: 20px; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+            transition: all 0.3s ease;
+        }
+        
+        h2 { text-align: center; font-weight: 800; font-size: 1.75rem; margin-top: 0; margin-bottom: 2rem; letter-spacing: -0.025em; }
+        
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+        
+        input, select, textarea { 
+            width: 100%; padding: 0.75rem 1rem; box-sizing: border-box; 
+            border: 1px solid var(--border); border-radius: 10px; 
+            background-color: var(--bg-page); color: var(--text-main);
+            font-family: inherit; font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background-color: var(--bg-card);
+        }
+        
+        button { 
+            padding: 0.75rem 1.5rem; background-color: var(--primary); color: #fff; 
+            border: none; border-radius: 10px; cursor: pointer; width: 100%; 
+            font-size: 0.95rem; font-weight: 600; letter-spacing: 0.025em;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 8px -1px rgba(0,0,0,0.15); }
+        button:active { transform: translateY(0); box-shadow: none; }
+        
+        .enable-btn { background-color: var(--success); margin-bottom: 1rem; }
+        .enable-btn:hover { background-color: var(--success-hover); }
+        .test-btn { background-color: var(--warning); color: #fff; margin-bottom: 1rem; }
+        .test-btn:hover { background-color: var(--warning-hover); }
+        .stop-btn { background-color: var(--info); margin-bottom: 1rem; }
+        .stop-btn:hover { background-color: var(--info-hover); }
+        .dark-mode-btn { background-color: var(--border); color: var(--text-main); margin-bottom: 2rem; box-shadow: none; }
+        .dark-mode-btn:hover { background-color: var(--text-muted); color: #fff; }
+        
+        .bulk-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+        .bulk-done-btn { background-color: var(--success); margin: 0; display: none; flex: 1; }
+        .bulk-done-btn:hover { background-color: var(--success-hover); }
+        .bulk-delete-btn { background-color: var(--text-muted); margin: 0; display: none; flex: 1; }
+        .bulk-delete-btn:hover { background-color: #475569; }
+        .clear-btn { background-color: var(--danger); margin: 0; flex: 1; }
+        .clear-btn:hover { background-color: var(--danger-hover); }
+        .export-btn { background-color: var(--purple); margin-top: 1rem; margin-bottom: 0; }
+        .export-btn:hover { background-color: var(--purple-hover); }
+        .import-btn { background-color: var(--teal); margin-top: 0.75rem; margin-bottom: 0; }
+        .import-btn:hover { background-color: var(--teal-hover); }
+        
+        .task-list { list-style: none; padding: 0; margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+        .task-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 1.25rem; border: 1px solid var(--border); background: var(--bg-card); 
+            border-radius: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+        }
+        .task-item:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); border-color: var(--primary); }
+        .task-info { display: flex; flex-direction: column; gap: 0.35rem; }
+        .task-name { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
+        .task-time { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+        .done { opacity: 0.6; background: var(--bg-page); border-color: transparent; }
+        .done:hover { transform: none; box-shadow: none; border-color: transparent; }
+        .done .task-name, .done .task-time { text-decoration: line-through; color: var(--text-muted); }
+        
+        .task-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .task-actions button { width: auto; padding: 0.4rem 0.75rem; font-size: 0.85rem; border-radius: 8px; box-shadow: none; font-weight: 600; }
+        .task-actions button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .done-btn { background-color: var(--danger); }
+        .done-btn:hover { background-color: var(--danger-hover); }
+        .status-done { color: var(--success); font-weight: 700; font-size: 0.85rem; padding: 0.4rem 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: inline-block; }
+        .delete-btn { background-color: var(--text-muted); }
+        .delete-btn:hover { background-color: #475569; }
+        .edit-btn { background-color: var(--warning); color: #fff; }
+        .edit-btn:hover { background-color: var(--warning-hover); }
+        .snooze-btn { background-color: #f97316; }
+        .snooze-btn:hover { background-color: #ea580c; }
+        .toggle-btn { background-color: var(--bg-page); color: var(--text-muted); border: 1px solid var(--border); }
+        .toggle-btn:hover { background-color: var(--border); color: var(--text-main); }
+        
+        .category-badge { padding: 0.2rem 0.6rem; font-size: 0.7rem; border-radius: 9999px; font-weight: 700; letter-spacing: 0.025em; color: white; margin-left: 0.5rem; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .priority-badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 9999px; background-color: var(--bg-page); color: var(--text-muted); font-weight: 700; letter-spacing: 0.025em; margin-left: 0.5rem; vertical-align: middle; border: 1px solid var(--border); }
+        .priority-High { border-left: 6px solid var(--danger); }
+        .priority-Medium { border-left: 6px solid var(--warning); }
+        .priority-Low { border-left: 6px solid var(--info); }
+        
+        .inactive { opacity: 0.5; filter: grayscale(100%); }
+        .alarm-active { background-color: rgba(239, 68, 68, 0.05) !important; border-color: var(--danger) !important; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        
+        .progress-container { width: 100%; border-radius: 9999px; height: 24px; background-color: var(--bg-page); border: 1px solid var(--border); margin-top: 2rem; margin-bottom: 1rem; position: relative; overflow: hidden; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--success), #34d399); border-radius: 9999px; width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-text { position: absolute; width: 100%; text-align: center; top: 0; left: 0; line-height: 24px; font-weight: 700; color: var(--text-main); font-size: 0.8rem; pointer-events: none; }
+        
+        textarea { resize: vertical; min-height: 80px; }
+        .notes-text { font-size: 0.85rem; color: var(--text-muted); background: var(--bg-page); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.75rem; white-space: pre-wrap; line-height: 1.4; }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--bg-card); padding: 2rem; border-radius: 20px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid var(--border); }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+        
+        @media (max-width: 500px) {
+            body { margin: 1rem; padding: 1.5rem; border-radius: 16px; }
+            .task-item { flex-direction: column; align-items: stretch; gap: 1rem; }
+            .task-actions { justify-content: flex-end; }
+        }
+    </style>
+</head>
+<body>
+    <h2>Persistent Task Notifier</h2>
+    <button class="enable-btn" onclick="requestNotificationPermission()">1. Enable Browser Notifications</button>
+    <button class="test-btn" onclick="testAlarm()">Test Alarm Sound</button>
+    <button class="stop-btn" onclick="stopAlarm()">Stop Alarm Sound</button>
+    <button class="dark-mode-btn" onclick="toggleDarkMode()">⚡ Toggle Alternate Theme</button>
+    
+    <div class="form-group">
+        <label for="alarmSound">Choose Alarm Sound:</label>
+        <select id="alarmSound" onchange="saveAlarmPreference()" style="width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="siren">Siren (Harsh & Loud)</option>
+            <option value="beep">Beep (Classic Digital)</option>
+            <option value="buzzer">Buzzer (Low & Heavy)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="nagInterval">Remind me again every:</label>
+        <select id="nagInterval" onchange="saveNagPreference()" style="width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="60000">1 Minute</option>
+            <option value="120000" selected>2 Minutes</option>
+            <option value="300000">5 Minutes</option>
+            <option value="600000">10 Minutes</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="taskName">Task Name:</label>
+        <input type="text" id="taskName" placeholder="e.g., Turn off the porch light">
+    </div>
+    <div class="form-group">
+        <label for="taskNotes">Notes / Description (Optional):</label>
+        <textarea id="taskNotes" placeholder="Any extra details..."></textarea>
+    </div>
+    <div class="form-group">
+        <label for="taskPriority">Priority:</label>
+        <select id="taskPriority" style="width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="taskCategory">Category (Optional):</label>
+        <input type="text" id="taskCategory" list="categoryOptions" placeholder="e.g., Work, Home, Health">
+        <datalist id="categoryOptions">
+            <option value="Work"></option>
+            <option value="Home"></option>
+            <option value="Health"></option>
+        </datalist>
+    </div>
+    <div class="form-group">
+        <label for="taskDate">Specific Date (Optional):</label>
+        <input type="date" id="taskDate">
+    </div>
+    <div class="form-group">
+        <label for="taskTime">When should it happen?</label>
+        <input type="time" id="taskTime">
+    </div>
+    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <input type="checkbox" id="taskRecurring" onchange="document.getElementById('daysSelection').style.display = this.checked ? 'block' : 'none'" style="width: auto; margin: 0;">
+        <label for="taskRecurring" style="margin: 0;">Repeat Task</label>
+    </div>
+    <div id="daysSelection" class="form-group" style="display: none; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="0"> Sun</label>
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="1"> Mon</label>
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="2"> Tue</label>
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="3"> Wed</label>
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="4"> Thu</label>
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="5"> Fri</label>
+        <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="day-cb" value="6"> Sat</label>
+        <div style="font-size: 0.8rem; color: #666; margin-top: 0.3rem;">(Leave all unchecked to repeat every day)</div>
+    </div>
+    <button onclick="addTask()">2. Add Task</button>
+
+    <button class="export-btn" onclick="exportTasks()">Export Tasks Backup</button>
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTasks(event)">
+    <button class="import-btn" onclick="initAudio(); document.getElementById('importFile').click()">Import Tasks Backup</button>
+    <div class="bulk-actions">
+        <button class="bulk-done-btn" onclick="markSelectedDone()" id="bulkDoneBtn">Mark Selected Done</button>
+        <button class="bulk-delete-btn" onclick="deleteSelected()" id="bulkDeleteBtn">Delete Selected</button>
+        <button class="clear-btn" onclick="clearDoneTasks()" id="clearDoneBtn" style="display: none;">Clear All Done Tasks</button>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="dailyProgressBar"></div>
+        <div class="progress-text" id="dailyProgressText">0% Completed Today</div>
+    </div>
+
+    <div class="form-group" style="margin-top: 2rem;">
+        <label for="searchInput">Search Tasks:</label>
+        <input type="text" id="searchInput" oninput="applySearchFilter()" placeholder="Search by name...">
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem; display: flex; gap: 1rem;">
+        <div style="flex: 1;">
+            <label for="categoryFilter">Filter by Category:</label>
+            <select id="categoryFilter" onchange="applyCategoryFilter()" style="width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="All">All Categories</option>
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <label for="sortMethod">Sort by:</label>
+            <select id="sortMethod" onchange="applySortMethod()" style="width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="Time">Time</option>
+                <option value="Category">Category</option>
+                <option value="Priority">Priority</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label style="font-weight: normal; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" id="showCompletedToggle" checked onchange="renderTasks()" style="width: auto; margin: 0;"> Show Completed Tasks
+        </label>
+    </div>
+
+    <ul class="task-list" id="taskList" style="margin-top: 1rem;"></ul>
+
+    <!-- Edit Task Modal Overlay -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; margin-bottom: 1rem;">Edit Task</h3>
+            <div class="form-group"><label>Task Name:</label><input type="text" id="editTaskName"></div>
+            <div class="form-group"><label>Notes / Description:</label><textarea id="editTaskNotes"></textarea></div>
+            <div class="form-group">
+                <label>Priority:</label>
+                <select id="editTaskPriority" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
+                    <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Category:</label><input type="text" id="editTaskCategory" list="categoryOptions"></div>
+            <div class="form-group"><label>Specific Date:</label><input type="date" id="editTaskDate"></div>
+            <div class="form-group"><label>Time:</label><input type="time" id="editTaskTime"></div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="checkbox" id="editTaskRecurring" onchange="document.getElementById('editDaysSelection').style.display = this.checked ? 'block' : 'none'" style="width: auto; margin: 0;">
+                <label style="margin: 0;">Repeat Task</label>
+            </div>
+            <div id="editDaysSelection" class="form-group" style="display: none; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="0"> Sun</label>
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="1"> Mon</label>
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="2"> Tue</label>
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="3"> Wed</label>
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="4"> Thu</label>
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="5"> Fri</label>
+                <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="6"> Sat</label>
+            </div>
+            <div class="modal-actions">
+                <button onclick="saveEditTask()" style="--btn-color: var(--success);">Save Changes</button>
+                <button onclick="closeEditModal()" style="--btn-color: var(--danger);">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+        
+        let audioCtx; // Global audio context
+        let activeOscillator; // Tracks the playing alarm so we can stop it
+        let alarmingTaskIds = new Set(); // Tracks which tasks are currently sounding the alarm
+        let currentCategoryFilter = 'All'; // Tracks the active filter
+        let currentSortMethod = 'Time'; // Tracks the active sort method
+        let currentSearchQuery = ''; // Tracks the active search query
+        let selectedTaskIds = new Set(); // Tracks bulk-selected tasks
+        let editingTaskId = null; // Tracks the task being edited in the modal
+
+        // Load the saved dark mode preference
+        if (localStorage.getItem('darkModePref') === 'true') {
+            document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
+        }
+        
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkModePref', isDark);
+        }
+
+        // Load the saved alarm preference when the page loads
+        const savedSound = localStorage.getItem('alarmSoundPref');
+        if (savedSound) {
+            document.getElementById('alarmSound').value = savedSound;
+        }
+        function saveAlarmPreference() {
+            localStorage.setItem('alarmSoundPref', document.getElementById('alarmSound').value);
+        }
+
+        // Load the saved nagging interval preference when the page loads
+        const savedInterval = localStorage.getItem('nagIntervalPref');
+        if (savedInterval) {
+            document.getElementById('nagInterval').value = savedInterval;
+        }
+        function saveNagPreference() {
+            localStorage.setItem('nagIntervalPref', document.getElementById('nagInterval').value);
+        }
+
+        // Load the saved sort method preference
+        const savedSort = localStorage.getItem('sortMethodPref');
+        if (savedSort) {
+            document.getElementById('sortMethod').value = savedSort;
+            currentSortMethod = savedSort;
+        }
+        
+        function applySortMethod() {
+            currentSortMethod = document.getElementById('sortMethod').value;
+            localStorage.setItem('sortMethodPref', currentSortMethod);
+            sortTasksList();
+            renderTasks();
+        }
+
+        function sortTasksList() {
+            if (currentSortMethod === 'Category') {
+                tasks.sort((a, b) => {
+                    const catCompare = (a.category || 'Uncategorized').localeCompare(b.category || 'Uncategorized');
+                    return catCompare !== 0 ? catCompare : a.time.localeCompare(b.time);
+                });
+            } else if (currentSortMethod === 'Priority') {
+                const pMap = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                tasks.sort((a, b) => {
+                    const pa = pMap[a.priority || 'Medium'] || 0;
+                    const pb = pMap[b.priority || 'Medium'] || 0;
+                    return pb !== pa ? pb - pa : a.time.localeCompare(b.time);
+                });
+            } else {
+                tasks.sort((a, b) => a.time.localeCompare(b.time));
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch('/tasks', { cache: 'no-store' });
+                tasks = await res.json();
+                sortTasksList(); // Automatically sort tasks using the active method
+                populateCategoryFilter();
+                renderTasks();
+            } catch (err) {
+                console.error("Failed to load tasks from server", err);
+            }
+        }
+        loadTasks();
+        
+        function populateCategoryFilter() {
+            const filterSelect = document.getElementById('categoryFilter');
+            const uniqueCategories = new Set(tasks.map(t => t.category || 'Uncategorized'));
+            const currentSelection = filterSelect.value || 'All';
+            
+            filterSelect.innerHTML = '<option value="All">All Categories</option>';
+            Array.from(uniqueCategories).sort().forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                filterSelect.appendChild(option);
+            });
+            
+            filterSelect.value = (uniqueCategories.has(currentSelection) || currentSelection === 'All') ? currentSelection : 'All';
+            currentCategoryFilter = filterSelect.value;
+        }
+
+        function applyCategoryFilter() {
+            currentCategoryFilter = document.getElementById('categoryFilter').value;
+            renderTasks();
+        }
+
+        function applySearchFilter() {
+            currentSearchQuery = document.getElementById('searchInput').value.toLowerCase();
+            renderTasks();
+        }
+
+        function requestNotificationPermission() {
+            initAudio(); // Initialize audio during user click
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        alert("Notifications enabled! You will now receive alerts.");
+                    } else {
+                        alert("Please allow notifications in your browser settings for this app to work.");
+                    }
+                });
+            }
+        }
+
+        function testAlarm() {
+            initAudio(); // Ensures audio context is ready via user click
+            playAlarmSound(true); // Plays a short version for testing
+        }
+
+        function stopAlarm() {
+            if (activeOscillator) {
+                try { activeOscillator.stop(); } catch (e) {}
+                activeOscillator = null;
+            }
+            alarmingTaskIds.clear(); // Clear visual highlights when stopping the alarm manually
+            renderTasks();
+        }
+
+        // Must be called during a user interaction (like clicking a button)
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Automatically unlock the audio engine the first time the user clicks anywhere on the page
+        document.body.addEventListener('click', initAudio, { once: true });
+
+        // Adds a loud, attention-grabbing beep sound for persistent reminders
+        function playAlarmSound(isTest = false) {
+            try {
+                if (!audioCtx) return; // Failsafe in case it wasn't initialized
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                // Stop any currently playing alarm before starting a new one
+                if (activeOscillator) {
+                    try { activeOscillator.stop(); } catch (e) {}
+                }
+
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                const soundType = document.getElementById('alarmSound').value || 'siren';
+                const now = audioCtx.currentTime;
+                gainNode.gain.setValueAtTime(0, now); // Initialize volume to 0
+                
+                const totalDuration = isTest ? 1.5 : 120; // 1.5s for test, 120s for real
+                let interval = 0.4;
+                let onDuration = 0.25;
+
+                if (soundType === 'buzzer') {
+                    oscillator.type = 'square';
+                    interval = 0.8;
+                    onDuration = 0.4;
+                } else if (soundType === 'beep') {
+                    oscillator.type = 'sine';
+                    interval = 0.5;
+                    onDuration = 0.2;
+                } else { // siren
+                    oscillator.type = 'sawtooth';
+                    interval = 0.4;
+                    onDuration = 0.25;
+                }
+
+                const pulses = Math.ceil(totalDuration / interval);
+
+                for (let i = 0; i < pulses; i++) {
+                    const startTime = now + (i * interval);
+                    gainNode.gain.setValueAtTime(1.0, startTime); // Volume ON
+                    gainNode.gain.setValueAtTime(0, startTime + onDuration); // Volume OFF
+                    
+                    if (soundType === 'siren') {
+                        oscillator.frequency.setValueAtTime(880, startTime);
+                        oscillator.frequency.setValueAtTime(1200, startTime + 0.1); // Jump pitch mid-beep
+                    } else if (soundType === 'beep') {
+                        oscillator.frequency.setValueAtTime(880, startTime);
+                    } else if (soundType === 'buzzer') {
+                        oscillator.frequency.setValueAtTime(150, startTime);
+                    }
+                }
+                
+                oscillator.start(now);
+                oscillator.stop(now + totalDuration); // Stop when finished
+                
+                activeOscillator = oscillator; // Save reference so we can stop it early
+            } catch (e) {
+                console.log("Audio alarm blocked by browser", e);
+            }
+        }
+
+        async function addTask() {
+            initAudio(); // Initialize audio during user click
+            const name = document.getElementById('taskName').value;
+            const notes = document.getElementById('taskNotes').value.trim();
+            const priority = document.getElementById('taskPriority').value;
+            const category = document.getElementById('taskCategory').value.trim();
+            const date = document.getElementById('taskDate').value;
+            const time = document.getElementById('taskTime').value;
+            const isRecurring = document.getElementById('taskRecurring').checked;
+            
+            let recurringDays = Array.from(document.querySelectorAll('.day-cb:checked')).map(cb => parseInt(cb.value));
+            if (isRecurring && recurringDays.length === 0) {
+                recurringDays = [0,1,2,3,4,5,6]; // Default to all days if none selected
+            }
+
+            if (!name || !time) {
+                alert("Please enter both a task name and a time.");
+                return;
+            }
+
+            await fetch('/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, notes, date, time, isRecurring, recurringDays, category: category || 'Uncategorized', priority })
+            });
+            
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskNotes').value = '';
+            document.getElementById('taskPriority').value = 'Medium';
+            document.getElementById('taskDate').value = '';
+            document.getElementById('taskTime').value = '';
+            document.getElementById('taskCategory').value = '';
+            document.getElementById('taskRecurring').checked = false;
+            document.getElementById('daysSelection').style.display = 'none';
+            document.querySelectorAll('.day-cb').forEach(cb => cb.checked = false);
+            loadTasks();
+        }
+
+
+        async function markDone(id) {
+            if (activeOscillator) {
+                try { activeOscillator.stop(); } catch (e) {} // Stop the alarm!
+            }
+            alarmingTaskIds.delete(id);
+            const today = new Date().toLocaleDateString();
+            await fetch(`/tasks/${id}`, { 
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isDone: true, lastCompletedDate: today })
+            });
+            loadTasks();
+        }
+
+        function updateBulkActions(checkbox) {
+            const id = parseInt(checkbox.value);
+            if (checkbox.checked) {
+                selectedTaskIds.add(id);
+            } else {
+                selectedTaskIds.delete(id);
+            }
+            const displayStyle = selectedTaskIds.size > 0 ? 'block' : 'none';
+            document.getElementById('bulkDoneBtn').style.display = displayStyle;
+            document.getElementById('bulkDeleteBtn').style.display = displayStyle;
+        }
+
+        async function markSelectedDone() {
+            if (selectedTaskIds.size === 0) return;
+            if (activeOscillator) {
+                try { activeOscillator.stop(); } catch (e) {} // Stop alarm if active
+            }
+            const today = new Date().toLocaleDateString();
+            const idsArray = Array.from(selectedTaskIds);
+            idsArray.forEach(id => alarmingTaskIds.delete(id)); // Clear visual highlights
+            
+            await fetch('/tasks/bulk-done', { 
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsArray, lastCompletedDate: today })
+            });
+            
+            selectedTaskIds.clear(); // Reset selections
+            document.getElementById('bulkDoneBtn').style.display = 'none';
+            loadTasks();
+        }
+
+        async function deleteSelected() {
+            if (selectedTaskIds.size === 0) return;
+            if (!confirm(`Are you sure you want to permanently delete ${selectedTaskIds.size} tasks?`)) return;
+            if (activeOscillator) {
+                try { activeOscillator.stop(); } catch (e) {} // Stop alarm if active
+            }
+            const idsArray = Array.from(selectedTaskIds);
+            idsArray.forEach(id => alarmingTaskIds.delete(id));
+            
+            await fetch('/tasks/bulk-delete', { 
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsArray })
+            });
+            
+            selectedTaskIds.clear(); // Reset selections
+            document.getElementById('bulkDoneBtn').style.display = 'none';
+            document.getElementById('bulkDeleteBtn').style.display = 'none';
+            loadTasks();
+        }
+
+        async function deleteTask(id) {
+            if (confirm("Are you sure you want to permanently delete this task?")) {
+                if (activeOscillator) {
+                    try { activeOscillator.stop(); } catch (e) {} // Stop the alarm!
+                }
+                alarmingTaskIds.delete(id);
+                const res = await fetch(`/tasks/${id}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    alert("Failed to delete! Please make sure you restarted your Node.js server.");
+                    return;
+                }
+                loadTasks();
+            }
+        }
+
+        async function clearDoneTasks() {
+            if (confirm("Are you sure you want to permanently delete all completed tasks?")) {
+                const res = await fetch('/tasks/done', { method: 'DELETE' });
+                if (!res.ok) {
+                    alert("Failed to clear tasks! Please make sure you restarted your Node.js server.");
+                    return;
+                }
+                loadTasks();
+            }
+        }
+
+        function exportTasks() {
+            if (tasks.length === 0) {
+                alert("No tasks to export!");
+                return;
+            }
+            const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `tasks_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function importTasks(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedTasks = JSON.parse(e.target.result);
+                    const res = await fetch('/tasks/import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(importedTasks)
+                    });
+                    
+                    if (!res.ok) throw new Error("Server rejected the import");
+                    
+                    alert("Tasks imported successfully!");
+                    loadTasks();
+                } catch (error) {
+                    alert("Failed to import. Make sure your Node.js server is running and the file is a valid backup.");
+                }
+                event.target.value = ''; // Reset file input so you can import the same file again if needed
+            };
+            reader.readAsText(file);
+        }
+
+        function openEditModal(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+            editingTaskId = id;
+
+            document.getElementById('editTaskName').value = task.name;
+            document.getElementById('editTaskNotes').value = task.notes || '';
+            document.getElementById('editTaskPriority').value = task.priority || 'Medium';
+            document.getElementById('editTaskCategory').value = task.category || '';
+            document.getElementById('editTaskDate').value = task.date || '';
+            document.getElementById('editTaskTime').value = task.time || '';
+
+            const recCb = document.getElementById('editTaskRecurring');
+            recCb.checked = task.isRecurring;
+            document.getElementById('editDaysSelection').style.display = task.isRecurring ? 'block' : 'none';
+
+            document.querySelectorAll('.edit-day-cb').forEach(cb => {
+                cb.checked = (task.recurringDays && task.recurringDays.includes(parseInt(cb.value)));
+            });
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            editingTaskId = null;
+        }
+
+        async function saveEditTask() {
+            if (!editingTaskId) return;
+            
+            const name = document.getElementById('editTaskName').value.trim();
+            const notes = document.getElementById('editTaskNotes').value.trim();
+            const priority = document.getElementById('editTaskPriority').value;
+            const category = document.getElementById('editTaskCategory').value.trim();
+            const date = document.getElementById('editTaskDate').value;
+            const time = document.getElementById('editTaskTime').value;
+            const isRecurring = document.getElementById('editTaskRecurring').checked;
+
+            let recurringDays = Array.from(document.querySelectorAll('.edit-day-cb:checked')).map(cb => parseInt(cb.value));
+            if (isRecurring && recurringDays.length === 0) {
+                recurringDays = [0,1,2,3,4,5,6];
+            }
+
+            if (!name || !time) {
+                alert("Name and Time are required!");
+                return;
+            }
+
+            await fetch(`/tasks/${editingTaskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, notes, priority, category: category || 'Uncategorized', date, time, isRecurring, recurringDays })
+            });
+            
+            closeEditModal();
+            loadTasks();
+        }
+
+        async function toggleTask(id, currentStatus) {
+            await fetch(`/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !currentStatus })
+            });
+            loadTasks();
+        }
+
+        async function snoozeTask(id) {
+            if (activeOscillator) {
+                try { activeOscillator.stop(); } catch (e) {} // Stop alarm sound instantly
+            }
+            alarmingTaskIds.delete(id);
+            
+            const snoozeTimeMs = new Date().getTime() + (5 * 60 * 1000); // Wait exactly 5 minutes
+            await fetch(`/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snoozeUntil: snoozeTimeMs })
+            });
+            loadTasks();
+        }
+
+        function formatTime12Hour(timeStr) {
+            if (!timeStr) return '';
+            const [hourStr, minuteStr] = timeStr.split(':');
+            let hours = parseInt(hourStr, 10);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12; // Converts '0' or '12' to 12, and '13+' to 1+
+            return `${hours}:${minuteStr} ${ampm}`;
+        }
+
+        function getCategoryColor(category) {
+            if (!category || category === 'Uncategorized') return 'var(--teal)'; // Default teal
+            let hash = 0;
+            for (let i = 0; i < category.length; i++) {
+                hash = category.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 100%, 60%)`; // Bright neon colors
+        }
+
+        function updateProgressBar() {
+            const now = new Date();
+            const todayDay = now.getDay();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const todayIso = `${yyyy}-${mm}-${dd}`;
+
+            let totalToday = 0;
+            let completedToday = 0;
+
+            tasks.forEach(task => {
+                const isActive = task.isActive !== false;
+                if (!isActive) return; // Skip paused tasks
+
+                let isTodayValid = true;
+                if (task.isRecurring && task.recurringDays && task.recurringDays.length > 0) {
+                    isTodayValid = task.recurringDays.includes(todayDay);
+                }
+                
+                let isDateValid = true;
+                if (task.date) {
+                    isDateValid = (task.date === todayIso);
+                }
+
+                if (isTodayValid && isDateValid) {
+                    totalToday++;
+                    if (task.isDone) completedToday++;
+                }
+            });
+
+            const percentage = totalToday === 0 ? 0 : Math.round((completedToday / totalToday) * 100);
+            document.getElementById('dailyProgressBar').style.width = `${percentage}%`;
+            document.getElementById('dailyProgressText').textContent = totalToday === 0 ? 'No tasks scheduled for today' : `${percentage}% Completed Today (${completedToday}/${totalToday})`;
+        }
+
+        function renderTasks() {
+            updateProgressBar();
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+            
+            const hasDoneTasks = tasks.some(t => t.isDone && !t.isRecurring);
+            document.getElementById('clearDoneBtn').style.display = hasDoneTasks ? 'block' : 'none';
+            const displayBulk = selectedTaskIds.size > 0 ? 'block' : 'none';
+            document.getElementById('bulkDoneBtn').style.display = displayBulk;
+            document.getElementById('bulkDeleteBtn').style.display = displayBulk;
+            
+            let filteredTasks = currentCategoryFilter === 'All' ? tasks : tasks.filter(t => (t.category || 'Uncategorized') === currentCategoryFilter);
+            
+            if (currentSearchQuery) {
+                filteredTasks = filteredTasks.filter(t => t.name.toLowerCase().includes(currentSearchQuery));
+            }
+
+            const showCompleted = document.getElementById('showCompletedToggle').checked;
+            if (!showCompleted) {
+                filteredTasks = filteredTasks.filter(t => !t.isDone);
+            }
+
+            filteredTasks.forEach(task => {
+                const isActive = task.isActive !== false; // Backwards compatibility for old tasks
+                const isAlarming = alarmingTaskIds.has(task.id);
+                
+                let recurText = '';
+                if (task.isRecurring) {
+                    const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+                    if (task.recurringDays && task.recurringDays.length > 0 && task.recurringDays.length < 7) {
+                        recurText = `🔁 (${task.recurringDays.map(d => dayNames[d]).join(', ')})`;
+                    } else {
+                        recurText = '🔁 (Daily)';
+                    }
+                }
+
+                const badgeColor = getCategoryColor(task.category);
+                const categoryBadge = task.category && task.category !== 'Uncategorized' ? `<span class="category-badge" style="color: ${badgeColor};">${task.category}</span>` : '';
+                const displayDate = task.date ? ` on ${task.date}` : '';
+                const priorityBadge = `<span class="priority-badge">${task.priority || 'Medium'}</span>`;
+
+                const li = document.createElement('li');
+                li.className = `task-item priority-${task.priority || 'Medium'} ${task.isDone ? 'done' : ''} ${isAlarming ? 'alarm-active' : ''} ${!isActive ? 'inactive' : ''}`;
+                li.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        ${!task.isDone ? `<input type="checkbox" class="bulk-select-cb" value="${task.id}" onchange="updateBulkActions(this)" ${selectedTaskIds.has(task.id) ? 'checked' : ''} style="width: auto; margin: 0; cursor: pointer;">` : ''}
+                        <div class="task-info">
+                            <span class="task-name">${task.name} ${recurText} ${priorityBadge} ${categoryBadge} ${!isActive ? '(Paused)' : ''}</span>
+                            <span class="task-time">Scheduled for: ${formatTime12Hour(task.time)}${displayDate}</span>
+                            ${task.notes ? `<div class="notes-text">${task.notes}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        ${isAlarming ? `<button class="snooze-btn" onclick="snoozeTask(${task.id})">Snooze 5m</button>` : ''}
+                        ${!task.isDone ? `<button class="done-btn" onclick="markDone(${task.id})">Mark Done</button>` : '<span class="status-done">Done! ✓</span>'}
+                        <button class="toggle-btn" onclick="toggleTask(${task.id}, ${isActive})">${isActive ? 'Pause' : 'Resume'}</button>
+                        <button class="edit-btn" onclick="openEditModal(${task.id})">Edit</button>
+                        <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // The "Nagging" Loop: Checks tasks every 10 seconds
+        setInterval(async () => {
+            await loadTasks(); // Sync with server in case another tab updated a task
+            const now = new Date();
+            const today = now.toLocaleDateString();
+            const todayDay = now.getDay();
+            const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const todayIso = `${yyyy}-${mm}-${dd}`;
+            const currentTimeMs = now.getTime();
+
+            tasks.forEach(task => {
+                // Reset recurring tasks if it's a new day
+                if (task.isRecurring && task.isDone && task.lastCompletedDate !== today) {
+                    fetch(`/tasks/${task.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isDone: false, lastCompletedDate: null })
+                    });
+                    task.isDone = false; // local optimistic update
+                }
+
+                const isActive = task.isActive !== false;
+                const snoozeUntil = task.snoozeUntil || 0;
+
+                let isTodayValid = true;
+                if (task.isRecurring && task.recurringDays && task.recurringDays.length > 0) {
+                    isTodayValid = task.recurringDays.includes(todayDay);
+                }
+                
+                let isDateValid = true;
+                if (task.date) {
+                    isDateValid = (task.date === todayIso);
+                }
+
+                // If incomplete, active, valid day, valid date, past scheduled time, AND not snoozed
+                if (!task.isDone && isActive && isTodayValid && isDateValid && currentTime >= task.time && currentTimeMs >= snoozeUntil) {
+                    const nagIntervalMs = parseInt(document.getElementById('nagInterval').value) || 120000;
+                    // If we haven't notified you yet, OR the chosen interval has passed since the last notification
+                    if (currentTimeMs - task.lastNotified >= nagIntervalMs) {
+                        if (Notification.permission === "granted") {
+                            new Notification("🚨 Overdue Task!", {
+                                body: `You still need to: ${task.name}!\nPlease go mark it as done!`,
+                                requireInteraction: true // Keeps the notification on screen until you dismiss it
+                            });
+                        } else {
+                            // Fallback if desktop notifications are blocked/ignored
+                            alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`);
+                        }
+
+                        // Play an audio alarm sound
+                        playAlarmSound();
+
+                        // Visually highlight the task and update the list immediately
+                        alarmingTaskIds.add(task.id);
+                        renderTasks();
+                        
+                        // Update locally immediately to prevent multiple popups
+                        task.lastNotified = currentTimeMs;
+
+                        // Record the time of this notification on the server so we can wait 2 minutes before the next one
+                        fetch(`/tasks/${task.id}/notified`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ lastNotified: currentTimeMs })
+                        });
+                    }
+                }
+            });
+        }, 10000); // 10,000 milliseconds = 10 seconds
+    </script>
+</body>
+</html>
