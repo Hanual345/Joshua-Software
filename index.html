@@ -6,154 +6,156 @@
     <title>Persistent Task Notifier</title>
     <style>
         :root {
-            --bg-page: #f8fafc;
-            --bg-card: #ffffff;
-            --text-main: #0f172a;
+            --bg-page: #090a0f;
+            --bg-card: #12131c;
+            --text-main: #e2e8f0;
             --text-muted: #64748b;
-            --border: #e2e8f0;
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --success: #10b981;
-            --success-hover: #059669;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --warning: #f59e0b;
-            --warning-hover: #d97706;
-            --info: #0ea5e9;
-            --info-hover: #0284c7;
-            --purple: #8b5cf6;
-            --purple-hover: #7c3aed;
-            --teal: #14b8a6;
-            --teal-hover: #0d9488;
+            --border: #1e293b;
+            --primary: #00f3ff;
+            --success: #00ff66;
+            --danger: #ff0055;
+            --warning: #ffea00;
+            --info: #0088ff;
+            --purple: #b000ff;
+            --teal: #00ffcc;
         }
 
         html.dark-mode {
-            --bg-page: #020617;
-            --bg-card: #0f172a;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #1e293b;
-            --primary: #818cf8;
-            --primary-hover: #6366f1;
+            --bg-page: #000000;
+            --bg-card: #050505;
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --border: #27272a;
+            --primary: #ff0055;
+            --success: #ccff00;
+            --danger: #00f3ff;
+            --warning: #ffaa00;
+            --info: #b000ff;
+            --purple: #00ff66;
+            --teal: #0088ff;
         }
 
         html { background-color: var(--bg-page); min-height: 100%; transition: background-color 0.3s ease; }
-        
+
         body { 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             max-width: 500px; margin: 2rem auto; padding: 2.5rem; 
             background-color: var(--bg-card); color: var(--text-main);
-            border-radius: 20px; 
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+            border-radius: 16px; border: 1px solid var(--primary);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 20px rgba(0, 243, 255, 0.05); 
             transition: all 0.3s ease;
         }
         
-        h2 { text-align: center; font-weight: 800; font-size: 1.75rem; margin-top: 0; margin-bottom: 2rem; letter-spacing: -0.025em; }
+        h2 { text-align: center; font-weight: 800; font-size: 1.75rem; margin-top: 0; margin-bottom: 2rem; color: #fff; text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary); text-transform: uppercase; letter-spacing: 0.1em; }
         
         .form-group { margin-bottom: 1.25rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: var(--text-main); text-shadow: 0 0 5px rgba(255,255,255,0.3); }
         
         input, select, textarea { 
             width: 100%; padding: 0.75rem 1rem; box-sizing: border-box; 
-            border: 1px solid var(--border); border-radius: 10px; 
-            background-color: var(--bg-page); color: var(--text-main);
+            border: 1px solid var(--border); border-radius: 8px; 
+            background-color: rgba(0,0,0,0.4); color: var(--text-main);
             font-family: inherit; font-size: 0.95rem;
             transition: all 0.2s ease;
+            color-scheme: dark;
         }
         input:focus, select:focus, textarea:focus {
             outline: none; border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-            background-color: var(--bg-card);
+            box-shadow: 0 0 12px var(--primary), inset 0 0 5px var(--primary);
+            background-color: rgba(0,0,0,0.7);
         }
         
         button { 
-            padding: 0.75rem 1.5rem; background-color: var(--primary); color: #fff; 
-            border: none; border-radius: 10px; cursor: pointer; width: 100%; 
-            font-size: 0.95rem; font-weight: 600; letter-spacing: 0.025em;
+            --btn-color: var(--primary);
+            padding: 0.75rem 1.5rem; background-color: transparent; color: var(--btn-color); 
+            border: 1px solid var(--btn-color); border-radius: 8px; cursor: pointer; width: 100%; 
+            font-size: 0.95rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.5);
+            text-shadow: 0 0 5px var(--btn-color);
         }
-        button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 8px -1px rgba(0,0,0,0.15); }
-        button:active { transform: translateY(0); box-shadow: none; }
+        button:hover { background-color: var(--btn-color); color: #000; box-shadow: 0 0 15px var(--btn-color), inset 0 0 10px var(--btn-color); transform: translateY(-2px); text-shadow: none; }
+        button:active { transform: translateY(0); box-shadow: 0 0 5px var(--btn-color); }
         
-        .enable-btn { background-color: var(--success); margin-bottom: 1rem; }
-        .enable-btn:hover { background-color: var(--success-hover); }
-        .test-btn { background-color: var(--warning); color: #fff; margin-bottom: 1rem; }
-        .test-btn:hover { background-color: var(--warning-hover); }
-        .stop-btn { background-color: var(--info); margin-bottom: 1rem; }
-        .stop-btn:hover { background-color: var(--info-hover); }
-        .dark-mode-btn { background-color: var(--border); color: var(--text-main); margin-bottom: 2rem; box-shadow: none; }
-        .dark-mode-btn:hover { background-color: var(--text-muted); color: #fff; }
+        .enable-btn { --btn-color: var(--success); margin-bottom: 1rem; }
+        .test-btn { --btn-color: var(--warning); margin-bottom: 1rem; }
+        .stop-btn { --btn-color: var(--info); margin-bottom: 1rem; }
+        .dark-mode-btn { --btn-color: var(--purple); margin-bottom: 2rem; }
+        .wake-lock-btn { --btn-color: var(--teal); margin-bottom: 1rem; }
         
         .bulk-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
-        .bulk-done-btn { background-color: var(--success); margin: 0; display: none; flex: 1; }
-        .bulk-done-btn:hover { background-color: var(--success-hover); }
-        .bulk-delete-btn { background-color: var(--text-muted); margin: 0; display: none; flex: 1; }
-        .bulk-delete-btn:hover { background-color: #475569; }
-        .clear-btn { background-color: var(--danger); margin: 0; flex: 1; }
-        .clear-btn:hover { background-color: var(--danger-hover); }
-        .export-btn { background-color: var(--purple); margin-top: 1rem; margin-bottom: 0; }
-        .export-btn:hover { background-color: var(--purple-hover); }
-        .import-btn { background-color: var(--teal); margin-top: 0.75rem; margin-bottom: 0; }
-        .import-btn:hover { background-color: var(--teal-hover); }
+        .bulk-done-btn { --btn-color: var(--success); margin: 0; display: none; flex: 1; }
+        .bulk-delete-btn { --btn-color: var(--danger); margin: 0; display: none; flex: 1; }
+        .clear-btn { --btn-color: var(--danger); margin: 0; flex: 1; }
+        .export-btn { --btn-color: var(--purple); margin-top: 1rem; margin-bottom: 0; }
+        .import-btn { --btn-color: var(--teal); margin-top: 0.75rem; margin-bottom: 0; }
         
         .task-list { list-style: none; padding: 0; margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
         .task-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 1.25rem; border: 1px solid var(--border); background: var(--bg-card); 
-            border-radius: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            padding: 1.25rem; border: 1px solid var(--border); background: rgba(0,0,0,0.2); 
+            border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
         }
-        .task-item:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); border-color: var(--primary); }
+        .task-item:hover { box-shadow: 0 0 15px rgba(0, 243, 255, 0.15); transform: translateY(-2px); border-color: var(--primary); }
         .task-info { display: flex; flex-direction: column; gap: 0.35rem; }
-        .task-name { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
+        .task-name { font-weight: 700; font-size: 1.1rem; color: #fff; text-shadow: 0 0 3px rgba(255,255,255,0.5); }
         .task-time { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
-        .done { opacity: 0.6; background: var(--bg-page); border-color: transparent; }
-        .done:hover { transform: none; box-shadow: none; border-color: transparent; }
-        .done .task-name, .done .task-time { text-decoration: line-through; color: var(--text-muted); }
+        .done { opacity: 0.5; background: rgba(0,0,0,0.1); border-color: var(--border) !important; box-shadow: none !important; }
+        .done:hover { transform: none; }
+        .done .task-name, .done .task-time { text-decoration: line-through; color: var(--text-muted); text-shadow: none; }
         
         .task-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .task-actions button { width: auto; padding: 0.4rem 0.75rem; font-size: 0.85rem; border-radius: 8px; box-shadow: none; font-weight: 600; }
-        .task-actions button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .done-btn { background-color: var(--danger); }
-        .done-btn:hover { background-color: var(--danger-hover); }
-        .status-done { color: var(--success); font-weight: 700; font-size: 0.85rem; padding: 0.4rem 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: inline-block; }
-        .delete-btn { background-color: var(--text-muted); }
-        .delete-btn:hover { background-color: #475569; }
-        .edit-btn { background-color: var(--warning); color: #fff; }
-        .edit-btn:hover { background-color: var(--warning-hover); }
-        .snooze-btn { background-color: #f97316; }
-        .snooze-btn:hover { background-color: #ea580c; }
-        .toggle-btn { background-color: var(--bg-page); color: var(--text-muted); border: 1px solid var(--border); }
-        .toggle-btn:hover { background-color: var(--border); color: var(--text-main); }
+        .task-actions button { width: auto; padding: 0.4rem 0.75rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; }
+        .done-btn { --btn-color: var(--success); }
+        .delete-btn { --btn-color: var(--danger); }
+        .edit-btn { --btn-color: var(--warning); }
+        .snooze-btn { --btn-color: var(--warning); }
+        .toggle-btn { --btn-color: var(--info); }
         
-        .category-badge { padding: 0.2rem 0.6rem; font-size: 0.7rem; border-radius: 9999px; font-weight: 700; letter-spacing: 0.025em; color: white; margin-left: 0.5rem; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .priority-badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 9999px; background-color: var(--bg-page); color: var(--text-muted); font-weight: 700; letter-spacing: 0.025em; margin-left: 0.5rem; vertical-align: middle; border: 1px solid var(--border); }
-        .priority-High { border-left: 6px solid var(--danger); }
-        .priority-Medium { border-left: 6px solid var(--warning); }
-        .priority-Low { border-left: 6px solid var(--info); }
-        
-        .inactive { opacity: 0.5; filter: grayscale(100%); }
-        .alarm-active { background-color: rgba(239, 68, 68, 0.05) !important; border-color: var(--danger) !important; animation: pulse-red 1.5s infinite; }
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        .status-done { 
+            color: var(--success); font-weight: 700; font-size: 0.8rem; 
+            padding: 0.4rem 0.75rem; background: transparent; 
+            border: 1px solid var(--success); border-radius: 6px; 
+            box-shadow: 0 0 8px var(--success), inset 0 0 5px var(--success);
+            text-shadow: 0 0 5px var(--success); display: inline-block; text-transform: uppercase;
         }
         
-        .progress-container { width: 100%; border-radius: 9999px; height: 24px; background-color: var(--bg-page); border: 1px solid var(--border); margin-top: 2rem; margin-bottom: 1rem; position: relative; overflow: hidden; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--success), #34d399); border-radius: 9999px; width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .progress-text { position: absolute; width: 100%; text-align: center; top: 0; left: 0; line-height: 24px; font-weight: 700; color: var(--text-main); font-size: 0.8rem; pointer-events: none; }
+        .category-badge, .priority-badge { 
+            padding: 0.2rem 0.6rem; font-size: 0.7rem; border-radius: 12px; font-weight: 700; 
+            letter-spacing: 0.05em; background-color: transparent; margin-left: 0.5rem; vertical-align: middle; 
+            border: 1px solid currentColor; box-shadow: 0 0 5px currentColor, inset 0 0 5px currentColor;
+            text-shadow: 0 0 3px currentColor; text-transform: uppercase;
+        }
+        .priority-High .priority-badge { color: var(--danger); }
+        .priority-Medium .priority-badge { color: var(--warning); }
+        .priority-Low .priority-badge { color: var(--info); }
+        .priority-High { border-left: 4px solid var(--danger); box-shadow: -4px 0 10px -2px var(--danger); }
+        .priority-Medium { border-left: 4px solid var(--warning); box-shadow: -4px 0 10px -2px var(--warning); }
+        .priority-Low { border-left: 4px solid var(--info); box-shadow: -4px 0 10px -2px var(--info); }
+        
+        .inactive { opacity: 0.5; filter: grayscale(80%); }
+        .alarm-active { background-color: rgba(255, 0, 85, 0.05) !important; border-color: var(--danger) !important; animation: pulse-neon 1.5s infinite; }
+        @keyframes pulse-neon {
+            0% { box-shadow: 0 0 5px var(--danger), inset 0 0 5px var(--danger); }
+            50% { box-shadow: 0 0 20px var(--danger), inset 0 0 15px var(--danger); }
+            100% { box-shadow: 0 0 5px var(--danger), inset 0 0 5px var(--danger); }
+        }
+        
+        .progress-container { width: 100%; border-radius: 12px; height: 24px; background-color: rgba(0,0,0,0.5); border: 1px solid var(--border); margin-top: 2rem; margin-bottom: 1rem; position: relative; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+        .progress-bar { height: 100%; background: var(--success); box-shadow: 0 0 15px var(--success); width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-text { position: absolute; width: 100%; text-align: center; top: 0; left: 0; line-height: 24px; font-weight: 700; color: #fff; font-size: 0.8rem; pointer-events: none; text-shadow: 0 0 5px #000, 0 0 8px var(--success); }
         
         textarea { resize: vertical; min-height: 80px; }
-        .notes-text { font-size: 0.85rem; color: var(--text-muted); background: var(--bg-page); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.75rem; white-space: pre-wrap; line-height: 1.4; }
+        .notes-text { font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.75rem; white-space: pre-wrap; line-height: 1.4; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
         
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-        .modal-content { background-color: var(--bg-card); padding: 2rem; border-radius: 20px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid var(--border); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--bg-card); padding: 2rem; border-radius: 16px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0, 243, 255, 0.2); border: 1px solid var(--primary); }
         .modal-actions { display: flex; gap: 1rem; margin-top: 2rem; }
         
         @media (max-width: 500px) {
-            body { margin: 1rem; padding: 1.5rem; border-radius: 16px; }
+            body { margin: 1rem; padding: 1.5rem; border-radius: 12px; }
             .task-item { flex-direction: column; align-items: stretch; gap: 1rem; }
             .task-actions { justify-content: flex-end; }
         }
@@ -164,7 +166,8 @@
     <button class="enable-btn" onclick="requestNotificationPermission()">1. Enable Browser Notifications</button>
     <button class="test-btn" onclick="testAlarm()">Test Alarm Sound</button>
     <button class="stop-btn" onclick="stopAlarm()">Stop Alarm Sound</button>
-    <button class="dark-mode-btn" onclick="toggleDarkMode()">⚡ Toggle Alternate Theme</button>
+    <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    <button class="wake-lock-btn" id="wakeLockBtn" onclick="toggleWakeLock()">📱 Keep Screen On (Off)</button>
     
     <div class="form-group">
         <label for="alarmSound">Choose Alarm Sound:</label>
@@ -307,8 +310,8 @@
                 <label style="display: inline-block; margin-right: 0.5rem; font-weight: normal;"><input type="checkbox" class="edit-day-cb" value="6"> Sat</label>
             </div>
             <div class="modal-actions">
-                <button onclick="saveEditTask()" style="--btn-color: var(--success);">Save Changes</button>
-                <button onclick="closeEditModal()" style="--btn-color: var(--danger);">Cancel</button>
+                <button onclick="saveEditTask()" style="background-color: #28a745;">Save Changes</button>
+                <button onclick="closeEditModal()" style="background-color: #6c757d;">Cancel</button>
             </div>
         </div>
     </div>
@@ -324,6 +327,7 @@
         let currentSearchQuery = ''; // Tracks the active search query
         let selectedTaskIds = new Set(); // Tracks bulk-selected tasks
         let editingTaskId = null; // Tracks the task being edited in the modal
+        let wakeLock = null; // Tracks the screen wake lock
 
         // Load the saved dark mode preference
         if (localStorage.getItem('darkModePref') === 'true') {
@@ -438,8 +442,6 @@
                         alert("Please allow notifications in your browser settings for this app to work.");
                     }
                 });
-            } else {
-                alert("Your browser blocks native notifications here (likely because it requires a secure HTTPS connection or 'Add to Home Screen' on iOS). The app will use loud audio, vibrations, and pop-ups instead!");
             }
         }
 
@@ -461,6 +463,15 @@
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Play a brief silent sound to fully unlock audio on strict mobile browsers (especially iOS Safari)
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0; // Silent volume
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -469,6 +480,32 @@
 
         // Automatically unlock the audio engine the first time the user clicks anywhere on the page
         document.body.addEventListener('click', initAudio, { once: true });
+
+        // Toggle Wake Lock to keep the mobile screen from turning off
+        async function toggleWakeLock() {
+            if (!('wakeLock' in navigator)) {
+                alert("Keep Screen On feature is not supported in this browser. Try keeping your phone plugged in.");
+                return;
+            }
+            try {
+                if (wakeLock !== null) {
+                    await wakeLock.release();
+                    wakeLock = null;
+                    document.getElementById('wakeLockBtn').textContent = "📱 Keep Screen On (Off)";
+                } else {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    document.getElementById('wakeLockBtn').textContent = "📱 Keep Screen On (Active)";
+                    // Re-acquire the lock if the user switches tabs and comes back
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    });
+                }
+            } catch (err) {
+                alert(`Screen Lock error: ${err.message}`);
+            }
+        }
 
         // Adds a loud, attention-grabbing beep sound for persistent reminders
         function playAlarmSound(isTest = false) {
@@ -802,13 +839,13 @@
         }
 
         function getCategoryColor(category) {
-            if (!category || category === 'Uncategorized') return 'var(--teal)'; // Default teal
+            if (!category || category === 'Uncategorized') return '#17a2b8'; // Default teal
             let hash = 0;
             for (let i = 0; i < category.length; i++) {
                 hash = category.charCodeAt(i) + ((hash << 5) - hash);
             }
             const hue = Math.abs(hash % 360);
-            return `hsl(${hue}, 100%, 60%)`; // Bright neon colors
+            return `hsl(${hue}, 70%, 40%)`; // 40% lightness ensures white text remains readable
         }
 
         function updateProgressBar() {
@@ -884,7 +921,7 @@
                 }
 
                 const badgeColor = getCategoryColor(task.category);
-                const categoryBadge = task.category && task.category !== 'Uncategorized' ? `<span class="category-badge" style="color: ${badgeColor};">${task.category}</span>` : '';
+                const categoryBadge = task.category && task.category !== 'Uncategorized' ? `<span class="category-badge" style="background-color: ${badgeColor};">${task.category}</span>` : '';
                 const displayDate = task.date ? ` on ${task.date}` : '';
                 const priorityBadge = `<span class="priority-badge">${task.priority || 'Medium'}</span>`;
 
@@ -953,42 +990,32 @@
                     const nagIntervalMs = parseInt(document.getElementById('nagInterval').value) || 120000;
                     // If we haven't notified you yet, OR the chosen interval has passed since the last notification
                     if (currentTimeMs - task.lastNotified >= nagIntervalMs) {
-                        // 1. Play an audio alarm sound FIRST so it isn't blocked by alerts
+                        if (Notification.permission === "granted") {
+                            new Notification("🚨 Overdue Task!", {
+                                body: `You still need to: ${task.name}!\nPlease go mark it as done!`,
+                                requireInteraction: true // Keeps the notification on screen until you dismiss it
+                            });
+                        } else {
+                            // Fallback if desktop notifications are blocked/ignored
+                            alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`);
+                        }
+
+                        // Play an audio alarm sound
                         playAlarmSound();
 
-                        // 2. Visually highlight the task and update the list immediately
+                        // Visually highlight the task and update the list immediately
                         alarmingTaskIds.add(task.id);
                         renderTasks();
                         
-                        // 3. Update locally immediately to prevent multiple popups
+                        // Update locally immediately to prevent multiple popups
                         task.lastNotified = currentTimeMs;
 
-                        // 4. Record the time of this notification on the server
+                        // Record the time of this notification on the server so we can wait 2 minutes before the next one
                         fetch(`/tasks/${task.id}/notified`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ lastNotified: currentTimeMs })
                         });
-
-                        // Trigger mobile phone vibration if supported
-                        if ("vibrate" in navigator) {
-                            navigator.vibrate([500, 200, 500, 200, 500]);
-                        }
-
-                        if ("Notification" in window && Notification.permission === "granted") {
-                            try {
-                                new Notification("🚨 Overdue Task!", {
-                                    body: `You still need to: ${task.name}!\nPlease go mark it as done!`,
-                                    requireInteraction: true // Keeps the notification on screen until you dismiss it
-                                });
-                            } catch (err) {
-                                // Android Chrome sometimes throws an error if a Service Worker isn't used
-                                setTimeout(() => alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`), 100);
-                            }
-                        } else {
-                            // Fallback if desktop notifications are blocked, ignored, or unsupported
-                            setTimeout(() => alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`), 100);
-                        }
                     }
                 }
             });
