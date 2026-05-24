@@ -953,6 +953,23 @@
                     const nagIntervalMs = parseInt(document.getElementById('nagInterval').value) || 120000;
                     // If we haven't notified you yet, OR the chosen interval has passed since the last notification
                     if (currentTimeMs - task.lastNotified >= nagIntervalMs) {
+                        // 1. Play an audio alarm sound FIRST so it isn't blocked by alerts
+                        playAlarmSound();
+
+                        // 2. Visually highlight the task and update the list immediately
+                        alarmingTaskIds.add(task.id);
+                        renderTasks();
+                        
+                        // 3. Update locally immediately to prevent multiple popups
+                        task.lastNotified = currentTimeMs;
+
+                        // 4. Record the time of this notification on the server
+                        fetch(`/tasks/${task.id}/notified`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ lastNotified: currentTimeMs })
+                        });
+
                         // Trigger mobile phone vibration if supported
                         if ("vibrate" in navigator) {
                             navigator.vibrate([500, 200, 500, 200, 500]);
@@ -966,29 +983,12 @@
                                 });
                             } catch (err) {
                                 // Android Chrome sometimes throws an error if a Service Worker isn't used
-                                alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`);
+                                setTimeout(() => alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`), 100);
                             }
                         } else {
                             // Fallback if desktop notifications are blocked, ignored, or unsupported
-                            alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`);
+                            setTimeout(() => alert(`🚨 OVERDUE TASK: ${task.name}\nPlease mark it as done!`), 100);
                         }
-
-                        // Play an audio alarm sound
-                        playAlarmSound();
-
-                        // Visually highlight the task and update the list immediately
-                        alarmingTaskIds.add(task.id);
-                        renderTasks();
-                        
-                        // Update locally immediately to prevent multiple popups
-                        task.lastNotified = currentTimeMs;
-
-                        // Record the time of this notification on the server so we can wait 2 minutes before the next one
-                        fetch(`/tasks/${task.id}/notified`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ lastNotified: currentTimeMs })
-                        });
                     }
                 }
             });
